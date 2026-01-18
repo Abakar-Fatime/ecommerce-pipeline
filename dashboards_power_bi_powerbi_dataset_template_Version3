@@ -1,0 +1,87 @@
+```markdown
+# Power BI Dataset Template — E-commerce DW
+
+This template describes a recommended dataset model, relationships, incremental refresh suggestions, and common DAX measures for the e-commerce analytics pipeline. Use this as a blueprint when building your .pbit/.pbix dataset.
+
+## Tables to include (from SQL Server DW)
+- dim_date
+- dim_customer
+- dim_product
+- dim_channel
+- dim_store
+- dim_device
+- dim_region
+- dim_promotion
+- dim_payment_method
+- dim_inventory_location
+- dim_campaign
+- dim_partner
+- fact_sales
+- fact_returns
+- fact_inventory_movements
+- fact_sessions
+- fact_payments
+- fact_promotion_performance
+
+## Relationships (star)
+- fact_* .date_key -> dim_date.date_key (Many:1)
+- fact_sales.customer_key -> dim_customer.customer_key (Many:1)
+- fact_sales.product_key -> dim_product.product_key (Many:1)
+- fact_sales.channel_key -> dim_channel.channel_key (Many:1)
+- fact_sales.store_key -> dim_store.store_key (Many:1)
+- fact_sales.device_key -> dim_device.device_key (Many:1)
+- fact_sales.payment_method_key -> dim_payment_method.payment_method_key (Many:1)
+- fact_sales.promotion_key -> dim_promotion.promotion_key (Many:1)
+(Repeat for other fact tables as applicable)
+
+## Query folding & Incremental refresh
+- Use DirectQuery for large, near-real-time datasets if low-latency needed; otherwise use Import with incremental refresh.
+- For Import incremental refresh:
+  - RangeStart/RangeEnd parameters in Power Query
+  - Partition by dim_date.date_value (daily partitions recommended)
+  - Historical partition beyond 2 years can be full refresh less frequently
+
+## Recommended measures (DAX)
+Total Sales =
+SUM(fact_sales[total_amount])
+
+Total Orders =
+DISTINCTCOUNT(fact_sales[order_id])
+
+Average Order Value (AOV) =
+DIVIDE([Total Sales], [Total Orders], 0)
+
+Total Quantity Sold =
+SUM(fact_sales[quantity])
+
+Gross Margin (example using cost if available) =
+SUM(fact_sales[total_amount]) - SUM(fact_inventory_movements[unit_cost] * fact_inventory_movements[quantity])
+
+Customer Lifetime Value (simple) =
+VAR customerRevenue = CALCULATE( SUM(fact_sales[total_amount]), ALLEXCEPT(dim_customer, dim_customer[customer_key]) )
+VAR avgCustomers = DISTINCTCOUNT(dim_customer[customer_key])
+RETURN DIVIDE( customerRevenue, avgCustomers )
+
+Repeat Purchase Rate =
+VAR customersWithRepeat = CALCULATE(
+    DISTINCTCOUNT(fact_sales[customer_key]),
+    FILTER(
+        SUMMARIZE(fact_sales, fact_sales[customer_key], "orders", COUNTROWS(fact_sales)),
+        [orders] > 1
+    )
+)
+VAR totalCustomers = DISTINCTCOUNT(fact_sales[customer_key])
+RETURN DIVIDE(customersWithRepeat, totalCustomers, 0)
+
+## Row-Level Security (RLS) example
+- Role: RegionalManager
+  - DAX filter on dim_region:
+    dim_region[region_code] IN { "EMEA", "APAC" } -- or use USERNAME() mapping table
+
+## Suggested visuals & pages
+- Executive Overview: Total Sales, MoM growth, Top 10 SKUs, Top Channels
+- Segmentation: Revenue by customer segment, CLTV cohorts
+- Inventory: Stock turnover, days of inventory, top-stocked SKUs
+- Promotions: Promo ROI, conversion lift
+- Operations: Orders by hour/day, payment failures, returns rate
+```
