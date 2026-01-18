@@ -1,0 +1,7 @@
+pandas
+numpy
+sqlalchemy
+pyodbc
+apache-airflow
+matplotlib
+seaborn
