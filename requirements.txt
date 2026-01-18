@@ -1,0 +1,6 @@
+apache-airflow==2.5.1
+pandas
+pyodbc
+sqlfluff
+pytest
+flake8
