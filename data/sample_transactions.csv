@@ -1,0 +1,4 @@
+order_id,order_date,channel,product_sku,quantity,unit_price,total_amount,customer_id
+1001,2025-01-01,web,SKU-123,2,19.99,39.98,CUST-001
+1002,2025-01-01,mobile,SKU-456,1,49.00,49.00,CUST-002
+1003,2025-01-02,store,SKU-123,1,19.99,19.99,CUST-003
